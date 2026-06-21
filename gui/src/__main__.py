@@ -1,0 +1,42 @@
+import sys
+import os
+import json
+import traceback
+
+from PyQt6.QtWidgets import QApplication, QMessageBox
+from PyQt6.QtCore import Qt, QSettings
+from PyQt6.QtGui import QIcon
+
+from src.main_window import MainWindow
+
+
+def exception_hook(exc_type, exc_value, exc_traceback):
+    """Global exception handler to show errors in a message box."""
+    error_msg = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+    print(f"Uncaught exception:\n{error_msg}", file=sys.stderr)
+    error_box = QMessageBox()
+    error_box.setIcon(QMessageBox.Icon.Critical)
+    error_box.setWindowTitle("Unexpected Error")
+    error_box.setText("An unexpected error occurred:")
+    error_box.setDetailedText(error_msg)
+    error_box.exec()
+
+
+def main():
+    sys.excepthook = exception_hook
+
+    app = QApplication(sys.argv)
+    app.setApplicationName("MangaJaNaiConverter")
+    app.setOrganizationName("MangaJaNai")
+    app.setOrganizationDomain("mangajanai.com")
+
+    settings = QSettings()
+
+    window = MainWindow()
+    window.show()
+
+    sys.exit(app.exec())
+
+
+if __name__ == "__main__":
+    main()
