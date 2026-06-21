@@ -482,11 +482,6 @@ class AppSettingsWidget(QWidget):
         title.setFont(QFont("Segoe UI", 14, QFont.Weight.Bold))
         header.addWidget(title)
         header.addStretch()
-        close_btn = QPushButton("✕ Close")
-        close_btn.setFixedWidth(90)
-        close_btn.setObjectName("closeBtn")
-        close_btn.clicked.connect(self.hide)
-        header.addWidget(close_btn)
         main_layout.addLayout(header)
 
         device_group = BorderFrame()

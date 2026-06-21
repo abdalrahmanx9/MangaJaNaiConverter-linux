@@ -179,17 +179,6 @@ QPushButton#addChainBtn:hover {
     background-color: #89b4fa;
 }
 
-QPushButton#closeBtn {
-    background-color: #f7768e;
-    color: #1a1b26;
-    font-weight: bold;
-    border: none;
-}
-
-QPushButton#closeBtn:hover {
-    background-color: #ff9eaf;
-}
-
 QPushButton#applyBtn {
     background-color: #7aa2f7;
     color: #1a1b26;
