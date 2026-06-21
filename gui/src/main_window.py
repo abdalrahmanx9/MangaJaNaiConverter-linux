@@ -900,7 +900,7 @@ class MainWindow(QMainWindow):
         io_layout = io_section.layout()
         io_layout.setSpacing(10)
 
-        tabs = QTabWidget()
+        self.tabs = QTabWidget()
 
         single_tab = QWidget()
         single_layout = QVBoxLayout(single_tab)
@@ -925,7 +925,7 @@ class MainWindow(QMainWindow):
         )
         single_border.layout().addLayout(single_inner)
         single_layout.addWidget(single_border)
-        tabs.addTab(single_tab, "📄 Single File Upscale")
+        self.tabs.addTab(single_tab, "📄 Single File Upscale")
 
         batch_tab = QWidget()
         batch_layout = QVBoxLayout(batch_tab)
@@ -962,9 +962,9 @@ class MainWindow(QMainWindow):
         batch_inner.addLayout(checks)
         batch_border.layout().addLayout(batch_inner)
         batch_layout.addWidget(batch_border)
-        tabs.addTab(batch_tab, "📁 Batch Folder Upscale")
+        self.tabs.addTab(batch_tab, "📁 Batch Folder Upscale")
 
-        io_layout.addWidget(tabs)
+        io_layout.addWidget(self.tabs)
 
         of_border = BorderFrame()
         of_layout = of_border.layout()
@@ -1375,6 +1375,7 @@ class MainWindow(QMainWindow):
 
     def _populate_workflow(self, wf):
         self.wf_name.setText(wf.workflow_name)
+        self.tabs.setCurrentIndex(wf.selected_tab_index)
         self.input_file.setText(wf.input_file_path)
         self.input_folder.setText(wf.input_folder_path)
         self.output_folder.setText(wf.output_folder_path)
@@ -1501,6 +1502,7 @@ class MainWindow(QMainWindow):
     def _get_current_workflow(self):
         wf = UpscaleWorkflow()
         wf.workflow_name = self.wf_name.text()
+        wf.selected_tab_index = self.tabs.currentIndex()
         wf.input_file_path = self.input_file.text()
         wf.input_folder_path = self.input_folder.text()
         wf.output_folder_path = self.output_folder.text()

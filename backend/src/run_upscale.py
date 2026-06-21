@@ -1714,6 +1714,9 @@ if __name__ == "__main__":
         target_height = workflow["DisplayDeviceHeight"]
 
     if workflow["SelectedTabIndex"] == 1:
+        if not os.path.exists(workflow["InputFolderPath"]):
+            log_err(f"Input folder does not exist: {workflow['InputFolderPath']}")
+            sys.exit(1)
         upscale_folder(
             workflow["InputFolderPath"],
             workflow["OutputFolderPath"],
@@ -1732,6 +1735,9 @@ if __name__ == "__main__":
             grayscale_detection_threshold,
         )
     elif workflow["SelectedTabIndex"] == 0:
+        if not os.path.exists(workflow["InputFilePath"]):
+            log_err(f"Input file does not exist: {workflow['InputFilePath']}")
+            sys.exit(1)
         upscale_file(
             workflow["InputFilePath"],
             workflow["OutputFolderPath"],
