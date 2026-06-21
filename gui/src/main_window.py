@@ -1265,6 +1265,7 @@ class MainWindow(QMainWindow):
 
         add_chain_row = QHBoxLayout()
         self.add_chain_btn = QPushButton("➕ Add Chain")
+        self.add_chain_btn.setObjectName("addChainBtn")
         self.add_chain_btn.clicked.connect(self._add_chain)
         add_chain_row.addWidget(self.add_chain_btn)
         add_chain_row.addWidget(
