@@ -761,8 +761,8 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.main_splitter, 1)
 
     def _setup_console_panel(self):
-        console_panel = QWidget()
-        console_layout = QVBoxLayout(console_panel)
+        self.console_panel = QWidget()
+        console_layout = QVBoxLayout(self.console_panel)
         console_layout.setContentsMargins(10, 5, 10, 5)
         console_layout.setSpacing(5)
 
@@ -772,36 +772,15 @@ class MainWindow(QMainWindow):
         console_header.addWidget(console_title)
         console_header.addStretch()
 
-        self.show_console_btn = QPushButton("Show/Hide")
-        self.show_console_btn.setCheckable(True)
-        self.show_console_btn.setChecked(True)
-        self.show_console_btn.setObjectName("showConsoleBtn")
-        self.show_console_btn.clicked.connect(
-            lambda: self.console_section.setVisible(self.show_console_btn.isChecked())
-        )
-        console_header.addWidget(self.show_console_btn)
-
-        close_console = QPushButton("✕")
-        close_console.setFixedWidth(30)
-        close_console.setObjectName("closeConsoleBtn")
-        close_console.clicked.connect(lambda: self.console_section.hide())
-        console_header.addWidget(close_console)
-
         console_layout.addLayout(console_header)
-
-        self.console_section = QWidget()
-        console_inner = QVBoxLayout(self.console_section)
-        console_inner.setContentsMargins(0, 0, 0, 0)
 
         self.console = QTextEdit()
         self.console.setReadOnly(True)
         self.console.setFont(QFont("Consolas", 10))
         self.console.setObjectName("console")
-        console_inner.addWidget(self.console)
+        console_layout.addWidget(self.console)
 
-        console_layout.addWidget(self.console_section)
-
-        self.main_splitter.addWidget(console_panel)
+        self.main_splitter.addWidget(self.console_panel)
 
     def _setup_bottom_bar(self):
         bottom = QWidget()
@@ -818,6 +797,15 @@ class MainWindow(QMainWindow):
         self.cancel_btn.setEnabled(False)
         self.cancel_btn.clicked.connect(self._cancel_upscale)
         bottom_layout.addWidget(self.cancel_btn)
+
+        self.toggle_console_btn = QPushButton("Toggle Console")
+        self.toggle_console_btn.setCheckable(True)
+        self.toggle_console_btn.setChecked(True)
+        self.toggle_console_btn.setObjectName("toggleConsoleBtn")
+        self.toggle_console_btn.clicked.connect(
+            lambda: self.console_panel.setVisible(self.toggle_console_btn.isChecked())
+        )
+        bottom_layout.addWidget(self.toggle_console_btn)
 
         bottom_layout.addStretch()
 

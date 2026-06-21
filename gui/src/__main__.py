@@ -30,10 +30,9 @@ def main():
     app.setOrganizationName("MangaJaNai")
     app.setOrganizationDomain("mangajanai.com")
 
-    # Load dark theme
-    theme_path = os.path.join(os.path.dirname(__file__), "dark_theme.qss")
-    if os.path.exists(theme_path):
-        with open(theme_path) as f:
+    qss_path = os.path.join(os.path.dirname(__file__), "dark_theme.qss")
+    if os.path.exists(qss_path):
+        with open(qss_path) as f:
             app.setStyleSheet(f.read())
 
     settings = QSettings()
