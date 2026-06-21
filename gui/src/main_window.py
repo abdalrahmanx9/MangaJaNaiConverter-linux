@@ -815,10 +815,10 @@ class MainWindow(QMainWindow):
         self.elapsed_label = QLabel("Elapsed: 00:00:00")
         bottom_layout.addWidget(self.elapsed_label)
 
-        self.etr_label = QLabel("ETR: --:--:--")
+        self.etr_label = QLabel("Estimated for file: --:--:--")
         bottom_layout.addWidget(self.etr_label)
 
-        self.eta_label = QLabel("ETA: --:--:--")
+        self.eta_label = QLabel("Estimated for all files: --:--:--")
         bottom_layout.addWidget(self.eta_label)
 
         self.archive_progress = QProgressBar()
@@ -848,13 +848,23 @@ class MainWindow(QMainWindow):
             elapsed = time.time() - self.start_time
             self.elapsed_label.setText(f"Elapsed: {timedelta(seconds=int(elapsed))}")
 
-            if self.processed_files > 0 and self.total_files > 0:
+            if hasattr(self, 'processed_files') and self.processed_files > 0 and self.total_files > 0:
                 rate = self.processed_files / elapsed
                 remaining = (self.total_files - self.processed_files) / rate
                 if remaining > 0:
-                    self.etr_label.setText(f"ETR: {timedelta(seconds=int(remaining))}")
-                    eta = datetime.now() + timedelta(seconds=int(remaining))
-                    self.eta_label.setText(f"ETA: {eta.strftime('%H:%M:%S')}")
+                    self.etr_label.setText(f"Estimated for file: {timedelta(seconds=int(remaining))}")
+            
+            if hasattr(self, 'batch_processed_files') and self.batch_processed_files > 0 and hasattr(self, 'batch_total_files') and self.batch_total_files > 0:
+                batch_rate = self.batch_processed_files / elapsed
+                batch_remaining = (self.batch_total_files - self.batch_processed_files) / batch_rate
+                if batch_remaining > 0:
+                    self.eta_label.setText(f"Estimated for all files: {timedelta(seconds=int(batch_remaining))}")
+            else:
+                if hasattr(self, 'processed_files') and self.processed_files > 0 and self.total_files > 0:
+                    rate = self.processed_files / elapsed
+                    remaining = (self.total_files - self.processed_files) / rate
+                    if remaining > 0:
+                        self.eta_label.setText(f"Estimated for all files: {timedelta(seconds=int(remaining))}")
 
     def _setup_workflow_header(self, layout):
         header = QHBoxLayout()
@@ -1599,7 +1609,7 @@ class MainWindow(QMainWindow):
             self.console.setTextColor(QColor("#f7768e"))
         elif "WARNING" in message or "Warning" in message or "FutureWarning" in message:
             self.console.setTextColor(QColor("#e0af68"))
-        elif "save image to zip" in message or "completed" in message.lower():
+        elif "save image to zip" in message or "completed" in message.lower() or "[OK]" in message:
             self.console.setTextColor(QColor("#9ece6a"))
         elif "read image" in message or "Matched Chain" in message:
             self.console.setTextColor(QColor("#565f89"))
@@ -1613,6 +1623,17 @@ class MainWindow(QMainWindow):
             self.console.verticalScrollBar().maximum()
         )
 
+        if message.startswith("PROGRESS=batch_total_files "):
+            try:
+                total = int(message.split()[-1])
+                self.batch_total_files = total
+                self.batch_processed_files = 0
+                self.total_progress.setMaximum(total)
+                self.total_progress.setValue(0)
+                self.total_progress.setFormat("%v / %m files")
+            except Exception:
+                pass
+
         # Parse image count for progress bars
         if message.startswith("PROGRESS=total_images "):
             try:
@@ -1622,16 +1643,18 @@ class MainWindow(QMainWindow):
                 self.archive_progress.setMaximum(total)
                 self.archive_progress.setValue(0)
                 self.archive_progress.setFormat("%v / %m images")
-                self.total_progress.setMaximum(total)
-                self.total_progress.setValue(0)
-                self.total_progress.setFormat("%v / %m total")
             except Exception:
                 pass
 
-        if "save image to zip:" in message:
-            self.processed_files += 1
+        if "save image to zip:" in message or "save image:" in message:
+            if hasattr(self, 'processed_files'):
+                self.processed_files += 1
             self.archive_progress.setValue(self.archive_progress.value() + 1)
-            self.total_progress.setValue(self.total_progress.value() + 1)
+            
+        if "PROGRESS=postprocess_worker_zip_archive" in message or "PROGRESS=postprocess_worker_folder_image" in message or "PROGRESS=postprocess_worker_image" in message:
+            if hasattr(self, 'batch_processed_files'):
+                self.batch_processed_files += 1
+                self.total_progress.setValue(self.total_progress.value() + 1)
 
     def _on_upscale_finished(self, success, message):
         self.timer.stop()

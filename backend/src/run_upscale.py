@@ -1356,6 +1356,13 @@ def upscale_file(
 ) -> None:
     input_file_base = Path(input_file_path).stem
 
+    batch_total_files = 0
+    if input_file_path.lower().endswith(IMAGE_EXTENSIONS):
+        batch_total_files = 1
+    elif input_file_path.lower().endswith(ARCHIVE_EXTENSIONS):
+        batch_total_files = 1
+    print(f"PROGRESS=batch_total_files {batch_total_files}", flush=True)
+
     if input_file_path.lower().endswith(ARCHIVE_EXTENSIONS):
         output_file_path = str(
             Path(
@@ -1425,6 +1432,15 @@ def upscale_folder(
     grayscale_detection_threshold: int,
 ) -> None:
     # print("upscale_folder: entering")
+
+    batch_total_files = 0
+    for root, _dirs, files in os.walk(input_folder_path):
+        for filename in files:
+            if upscale_images and filename.lower().endswith(IMAGE_EXTENSIONS):
+                batch_total_files += 1
+            elif upscale_archives and filename.lower().endswith(ARCHIVE_EXTENSIONS):
+                batch_total_files += 1
+    print(f"PROGRESS=batch_total_files {batch_total_files}", flush=True)
 
     # preprocess_queue = Queue(maxsize=1)
     upscale_queue = Queue(maxsize=1)
