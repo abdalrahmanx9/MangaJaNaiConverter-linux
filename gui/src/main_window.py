@@ -848,23 +848,37 @@ class MainWindow(QMainWindow):
             elapsed = time.time() - self.start_time
             self.elapsed_label.setText(f"Elapsed: {timedelta(seconds=int(elapsed))}")
 
-            if hasattr(self, 'processed_files') and self.processed_files > 0 and self.total_files > 0:
-                rate = self.processed_files / elapsed
-                remaining = (self.total_files - self.processed_files) / rate
-                if remaining > 0:
-                    self.etr_label.setText(f"Estimated for file: {timedelta(seconds=int(remaining))}")
+            file_elapsed = elapsed
+            if hasattr(self, 'current_file_start_time') and self.current_file_start_time:
+                file_elapsed = time.time() - self.current_file_start_time
+
+            time_on_current_image = 0
+            if hasattr(self, 'last_image_time'):
+                time_on_current_image = time.time() - self.last_image_time
             
-            if hasattr(self, 'batch_processed_files') and self.batch_processed_files > 0 and hasattr(self, 'batch_total_files') and self.batch_total_files > 0:
-                batch_rate = self.batch_processed_files / elapsed
-                batch_remaining = (self.batch_total_files - self.batch_processed_files) / batch_rate
-                if batch_remaining > 0:
-                    self.eta_label.setText(f"Estimated for all files: {timedelta(seconds=int(batch_remaining))}")
-            else:
-                if hasattr(self, 'processed_files') and self.processed_files > 0 and self.total_files > 0:
-                    rate = self.processed_files / elapsed
-                    remaining = (self.total_files - self.processed_files) / rate
-                    if remaining > 0:
-                        self.eta_label.setText(f"Estimated for all files: {timedelta(seconds=int(remaining))}")
+            smooth_image_addition = 0
+            if hasattr(self, 'avg_image_time') and self.avg_image_time > 0:
+                smooth_image_addition = min(1.0, time_on_current_image / self.avg_image_time)
+
+            if hasattr(self, 'processed_files') and self.total_files > 0 and hasattr(self, 'avg_image_time'):
+                unstarted_images = max(0, self.total_files - self.processed_files - 1)
+                file_remaining = (unstarted_images * self.avg_image_time) + max(0, self.avg_image_time - time_on_current_image)
+                if file_remaining > 0:
+                    self.etr_label.setText(f"Estimated for file: {timedelta(seconds=int(file_remaining))}")
+            
+            if hasattr(self, 'batch_total_files') and self.batch_total_files > 0:
+                batch_completed = getattr(self, 'batch_processed_files', 0)
+                current_file_progress = 0
+                if hasattr(self, 'total_files') and self.total_files > 0 and hasattr(self, 'processed_files'):
+                    processed_smooth = self.processed_files + smooth_image_addition
+                    current_file_progress = processed_smooth / self.total_files
+                
+                effective_batch_completed = batch_completed + current_file_progress
+                if effective_batch_completed > 0:
+                    batch_rate = effective_batch_completed / elapsed
+                    batch_remaining = (self.batch_total_files - effective_batch_completed) / batch_rate
+                    if batch_remaining > 0:
+                        self.eta_label.setText(f"Estimated for all files: {timedelta(seconds=int(batch_remaining))}")
 
     def _setup_workflow_header(self, layout):
         header = QHBoxLayout()
@@ -1585,6 +1599,7 @@ class MainWindow(QMainWindow):
         self.upscale_btn.setEnabled(False)
         self.cancel_btn.setEnabled(True)
         self.start_time = time.time()
+        self.last_image_time = time.time()
         self.timer.start(1000)
         self.total_progress.setRange(0, 1)
         self.total_progress.setValue(0)
@@ -1640,6 +1655,8 @@ class MainWindow(QMainWindow):
                 total = int(message.split()[-1])
                 self.total_files = total
                 self.processed_files = 0
+                self.current_file_start_time = time.time()
+                self.last_image_time = time.time()
                 self.archive_progress.setMaximum(total)
                 self.archive_progress.setValue(0)
                 self.archive_progress.setFormat("%v / %m images")
@@ -1647,6 +1664,15 @@ class MainWindow(QMainWindow):
                 pass
 
         if "save image to zip:" in message or "save image:" in message:
+            now = time.time()
+            if hasattr(self, 'last_image_time'):
+                duration = now - self.last_image_time
+                if not hasattr(self, 'avg_image_time'):
+                    self.avg_image_time = duration
+                else:
+                    self.avg_image_time = 0.8 * self.avg_image_time + 0.2 * duration
+            self.last_image_time = now
+
             if hasattr(self, 'processed_files'):
                 self.processed_files += 1
             self.archive_progress.setValue(self.archive_progress.value() + 1)
