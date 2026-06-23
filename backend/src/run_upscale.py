@@ -741,9 +741,11 @@ def preprocess_worker_archive_file(
 
                     model_abs_path = get_model_abs_path(chain["ModelFilePath"])
 
-                    if model_abs_path in loaded_models:
+                    if not chain["ModelFilePath"] or chain["ModelFilePath"] == "No Model":
+                        model = None
+                    elif model_abs_path in loaded_models:
                         model = loaded_models[model_abs_path]
-                    elif os.path.exists(model_abs_path):
+                    elif os.path.exists(model_abs_path) and os.path.isfile(model_abs_path):
                         t0 = time.time()
                         model, _, _ = load_model_node(context, Path(model_abs_path))
                         loaded_models[model_abs_path] = model
@@ -912,9 +914,11 @@ def preprocess_worker_folder(
 
                         model_abs_path = get_model_abs_path(chain["ModelFilePath"])
 
-                        if model_abs_path in loaded_models:
+                        if not chain["ModelFilePath"] or chain["ModelFilePath"] == "No Model":
+                            model = None
+                        elif model_abs_path in loaded_models:
                             model = loaded_models[model_abs_path]
-                        elif os.path.exists(model_abs_path):
+                        elif os.path.exists(model_abs_path) and os.path.isfile(model_abs_path):
                             model, _, _ = load_model_node(context, Path(model_abs_path))
                             loaded_models[model_abs_path] = model
                             log_debug(
@@ -1052,17 +1056,17 @@ def preprocess_worker_image(
             else:
                 image = normalize(image)
 
-            if chain["ModelFilePath"] == "No Model":
+            if not chain["ModelFilePath"] or chain["ModelFilePath"] == "No Model":
                 pass
             else:
                 model_abs_path = get_model_abs_path(chain["ModelFilePath"])
 
-                if not os.path.exists(model_abs_path):
+                if not os.path.exists(model_abs_path) or not os.path.isfile(model_abs_path):
                     raise FileNotFoundError(model_abs_path)
 
                 if model_abs_path in loaded_models:
                     model = loaded_models[model_abs_path]
-                elif os.path.exists(model_abs_path):
+                elif os.path.exists(model_abs_path) and os.path.isfile(model_abs_path):
                     model, _, _ = load_model_node(context, Path(model_abs_path))
                     loaded_models[model_abs_path] = model
                     log_debug(
