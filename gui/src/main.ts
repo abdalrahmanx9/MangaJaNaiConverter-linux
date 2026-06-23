@@ -104,57 +104,39 @@ let currentArchiveImages = 0;
 let startTime = 0;
 
 class ETACalculator {
-    private minimumData: number;
-    private maximumDurationMs: number;
-    private queue: { timeMs: number; progress: number }[] = [];
-    private oldest: { timeMs: number; progress: number } | null = null;
-    private current: { timeMs: number; progress: number } | null = null;
+    private startTimeMs: number = 0;
+    private currentProgress: number = 0;
 
-    constructor(minimumData: number, maximumDurationSec: number) {
-        this.minimumData = minimumData;
-        this.maximumDurationMs = maximumDurationSec * 1000;
-    }
+    constructor() {}
 
     reset() {
-        this.queue = [];
-        this.oldest = null;
-        this.current = null;
-    }
-
-    private clearExpired() {
-        const expired = Date.now() - this.maximumDurationMs;
-        while (this.queue.length > this.minimumData && this.queue[0].timeMs < expired) {
-            this.oldest = this.queue.shift()!;
-        }
+        this.startTimeMs = Date.now();
+        this.currentProgress = 0;
     }
 
     update(progress: number) {
-        if (this.current && this.current.progress === progress) {
-            return;
-        }
-        this.clearExpired();
-        this.current = { timeMs: Date.now(), progress };
-        this.queue.push(this.current);
-        if (this.queue.length === 1) {
-            this.oldest = this.current;
+        this.currentProgress = progress;
+        if (this.startTimeMs === 0 && progress > 0) {
+            this.startTimeMs = Date.now();
         }
     }
 
     get ETR_Seconds(): number {
-        if (this.queue.length < this.minimumData || !this.oldest || !this.current || this.oldest.progress === this.current.progress) {
+        if (this.currentProgress <= 0 || this.startTimeMs === 0 || this.currentProgress >= 1) {
             return Infinity;
         }
-        const finishedInMs = (1.0 - this.current.progress) * (this.current.timeMs - this.oldest.timeMs) / (this.current.progress - this.oldest.progress);
-        return finishedInMs / 1000;
+        const elapsedMs = Date.now() - this.startTimeMs;
+        const totalEstimatedMs = elapsedMs / this.currentProgress;
+        return (totalEstimatedMs - elapsedMs) / 1000;
     }
 
     get ETAIsAvailable(): boolean {
-        return this.queue.length >= this.minimumData && this.oldest !== null && this.current !== null && this.oldest.progress !== this.current.progress;
+        return this.startTimeMs !== 0 && this.currentProgress > 0 && (Date.now() - this.startTimeMs) > 2000;
     }
 }
 
-const archiveEtaCalc = new ETACalculator(2, 3.0);
-const totalEtaCalc = new ETACalculator(2, 3.0);
+const archiveEtaCalc = new ETACalculator();
+const totalEtaCalc = new ETACalculator();
 
 let saveTimeout: number | null = null;
 async function scheduleSave() {
@@ -552,7 +534,7 @@ function renderChains(wf: UpscaleWorkflow) {
         card.querySelector(".chain-rf")?.addEventListener("change", (e) => wf.chains[idx].resize_factor_before_upscale = parseFloat((e.target as HTMLInputElement).value));
         card.querySelector(".chain-model")?.addEventListener("change", (e) => wf.chains[idx].model_file_path = (e.target as HTMLSelectElement).value);
         card.querySelector(".chain-open-models-btn")?.addEventListener("click", () => {
-            const mPath = appSettings.models_directory === "backend/models" ? "F:/MangaJaNaiConverter-linux/backend/models" : appSettings.models_directory;
+            const mPath = appSettings.models_directory === "backend/models" ? "/media/abdalrahman/GAMES/MangaJaNaiConverter-linux/backend/models" : appSettings.models_directory;
             invoke("open_folder", { path: mPath }).catch(e => appendConsole("Failed to open models folder: " + e));
         });
         card.querySelector(".chain-tile")?.addEventListener("change", (e) => wf.chains[idx].model_tile_size = (e.target as HTMLSelectElement).value);
@@ -578,6 +560,7 @@ function handleProgressMsg(msg: string) {
         } else if (key === "total_images") {
             totalArchiveImages = val;
             currentArchiveImages = 0;
+            archiveEtaCalc.reset();
         } else if (key === "postprocess_worker_zip_image") {
             currentArchiveImages++;
         } else if (key === "postprocess_worker_zip_archive") {
@@ -691,21 +674,21 @@ function setupEventListeners() {
 
     // Browsing
     browseInputFileBtn.addEventListener("click", async () => {
-        const selected = await open({ directory: false, defaultPath: "F:\\MangaJaNaiConverter-linux" });
+        const selected = await open({ directory: false, defaultPath: "/media/abdalrahman/GAMES/MangaJaNaiConverter-linux" });
         if (selected) {
             appSettings.workflows[currentWorkflowIndex].input_file_path = selected as string;
             renderWorkflow();
         }
     });
     browseInputFolderBtn.addEventListener("click", async () => {
-        const selected = await open({ directory: true, defaultPath: "F:\\MangaJaNaiConverter-linux" });
+        const selected = await open({ directory: true, defaultPath: "/media/abdalrahman/GAMES/MangaJaNaiConverter-linux" });
         if (selected) {
             appSettings.workflows[currentWorkflowIndex].input_folder_path = selected as string;
             renderWorkflow();
         }
     });
     browseOutputFolderBtn.addEventListener("click", async () => {
-        const selected = await open({ directory: true, defaultPath: "F:\\MangaJaNaiConverter-linux" });
+        const selected = await open({ directory: true, defaultPath: "/media/abdalrahman/GAMES/MangaJaNaiConverter-linux" });
         if (selected) {
             appSettings.workflows[currentWorkflowIndex].output_folder_path = selected as string;
             renderWorkflow();
@@ -922,7 +905,7 @@ function setupEventListeners() {
     closeSettingsBtn.addEventListener("click", () => settingsModal.style.display = "none");
     const browseModelsBtn = document.getElementById("browse-models-btn")!;
     browseModelsBtn.addEventListener("click", async () => {
-        const selected = await open({ directory: true, defaultPath: "F:\\MangaJaNaiConverter-linux" });
+        const selected = await open({ directory: true, defaultPath: "/media/abdalrahman/GAMES/MangaJaNaiConverter-linux" });
         if (selected) settingModelsDir.value = selected as string;
     });
 
@@ -1015,6 +998,8 @@ function setupEventListeners() {
             const path: string = await invoke("save_settings", { settingsJson });
             appendConsole(`Settings saved to ${path}`);
             
+            consolePanel.style.display = "flex";
+            toggleConsoleBtn.classList.add("toggle-active");
             appendConsole("Starting upscale process...");
             isUpscaling = true;
             upscaleBtn.disabled = true;

@@ -499,7 +499,7 @@ button::-moz-focus-inner { border: 0; }
 .console-panel {
   display: none;
   flex-direction: column;
-  height: 240px;
+  height: 340px;
   border-top: 1px solid var(--border-strong);
   background: #0d1117;
   flex-shrink: 0;
