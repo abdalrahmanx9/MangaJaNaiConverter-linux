@@ -226,10 +226,16 @@ export HSA_OVERRIDE_GFX_VERSION=10.3.0
 python3 -c "import torch; print(torch.cuda.is_available())"
 ```
 
-**Slow performance / low power draw:**
+**Slow performance / low power draw (MCLK stuck at 96Mhz):**
+A known AMD ROCm bug on Linux (especially with RX 6000 series like the 6700 XT) can cause the GPU Memory Clock (MCLK) to get permanently stuck at 96MHz instead of boosting to 2000MHz+ during AI workloads. This starves PyTorch of memory bandwidth, leading to 99% GPU utilization but extremely low power draw (e.g. 45W instead of 200W) and minutes-long generation times.
+
+To fix this, force the GPU into its high-performance power state before upscaling:
 ```bash
-echo "high" | sudo tee /sys/class/drm/card*/device/power_dpm_force_performance_level
+echo "high" | sudo tee /sys/class/drm/card0/device/power_dpm_force_performance_level
 ```
+*(Note: If you have an integrated graphics chip, your discrete GPU might be `card1` instead of `card0`. Check `rocm-smi` to see which device is your discrete GPU, and change the command accordingly, e.g., `card1`).*
+
+Alternatively, disabling **FreeSync** or lowering your monitor refresh rate to 60Hz/120Hz can also prevent this bug.
 
 **VRAM not cleared after cancel/kill:**
 ROCm does not auto-free orphaned GPU allocations from killed processes. VRAM clears on reboot. `sudo rocm-smi --gpureset` may freeze the desktop on some configurations — use with caution.

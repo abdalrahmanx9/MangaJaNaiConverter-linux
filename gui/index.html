@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MangaJaNai</title>
+  <link rel="stylesheet" href="/src/styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+  <!-- Setup Wizard Overlay -->
+  <div id="setupWizardOverlay" class="modal-overlay" style="z-index: 10000;">
+    <div class="modal-content glass" style="width: 600px; display: flex; flex-direction: column; gap: 16px; padding: 24px;">
+      <h2 style="margin: 0; color: var(--text); font-size: 24px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">MangaJaNai Setup</h2>
+      
+      <div id="setupStep1" style="display: flex; flex-direction: column; gap: 16px;">
+        <p style="color: var(--text-secondary); margin: 0; font-size: 14px;">Welcome! It looks like this is your first time running MangaJaNai. We need to download and install PyTorch and the AI upscaling backend.</p>
+
+        <div class="card" style="padding: 16px; margin-bottom: 0;">
+          <h4 style="margin: 0 0 8px 0; color: var(--text);">Select your Graphics Card (GPU) Type:</h4>
+          <p style="color: var(--text-muted); font-size: 13px; margin: 0 0 12px 0;">This ensures we download the correct hardware acceleration libraries (CUDA for NVIDIA, ROCm for AMD).</p>
+          <select id="setupGpuSelect" class="dropdown-select" style="width: 100%;">
+            <option value="NVIDIA">NVIDIA (RTX / GTX Series)</option>
+            <option value="AMD">AMD (Radeon RX Series)</option>
+          </select>
+        </div>
+        
+        <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+          <button id="startSetupBtn" class="btn btn-primary">Begin Installation</button>
+        </div>
+      </div>
+      
+      <div id="setupStep2" style="display: none; flex-direction: column; gap: 12px;">
+        <p style="color: var(--text-secondary); margin: 0; font-size: 14px;">Installing dependencies. This will download ~4GB of data and may take several minutes depending on your internet connection.</p>
+        <textarea id="setupLogsBox" readonly style="background: var(--input-bg); color: var(--text-secondary); padding: 12px; border-radius: var(--radius-sm); height: 300px; overflow-y: auto; font-family: 'Consolas', 'Monaco', monospace; font-size: 12px; margin: 0; border: 1px solid var(--border); white-space: pre; resize: none; width: 100%; box-sizing: border-box; cursor: text;"></textarea>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span id="setupStatusText" style="color: var(--accent); font-weight: 600; font-size: 14px;">Installing...</span>
+          <button id="setupContinueBtn" class="btn btn-success" style="display: none;">Finish Setup</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="app">
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h2>MangaJaNai</h2>
+        <div class="sidebar-tagline">Manga Upscaler</div>
+      </div>
+
+      <button id="app-settings-btn" class="nav-btn">
+        <span class="material-icons">settings</span>
+        App Settings
+      </button>
+
+      <div class="nav-section">
+        <h3>Default Workflows</h3>
+        <button class="nav-btn active" id="default-workflow-btn">
+          <span class="material-icons">book</span>
+          <span id="workflow-name-sidebar">Upscale Manga (Default)</span>
+        </button>
+      </div>
+
+      <div class="nav-section">
+        <div class="section-header">
+          <h3>Custom Workflows</h3>
+          <span class="material-icons info-icon" style="margin-left: 6px;" data-tooltip="Custom workflows provide convenient access to save and load preset settings for upscaling.">help_outline</span>
+          <button id="sidebar-add-workflow-btn" class="btn-icon" data-tooltip="Add Custom Workflow" style="margin-left: auto; padding: 2px;">
+            <span class="material-icons" style="font-size: 16px;">add</span>
+          </button>
+        </div>
+        <div id="custom-workflows-container">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <header class="app-header">
+        <div class="app-header-title">
+          <span class="material-icons" style="color: var(--accent);">auto_stories</span>
+          <span id="header-workflow-name">Upscale Manga (Default)</span>
+        </div>
+        <div class="app-header-actions">
+          <button id="theme-toggle-btn" class="theme-toggle" aria-label="Toggle theme">
+            <span class="material-icons" id="theme-toggle-icon">light_mode</span>
+          </button>
+        </div>
+      </header>
+
+      <div class="scroll-area">
+        <div class="form-container">
+          
+          <div class="workflow-header">
+            <div class="input-group">
+              <label for="workflow-name-input">Workflow Name</label>
+              <input type="text" id="workflow-name-input" value="Upscale Manga (Default)">
+            </div>
+            <div class="workflow-actions">
+              <button class="btn btn-secondary" id="import-workflow-btn"><span class="material-icons">file_open</span> Import Workflow</button>
+              <button class="btn btn-secondary" id="export-workflow-btn"><span class="material-icons">drive_folder_upload</span> Export Workflow</button>
+              <button class="btn btn-secondary" id="reset-workflow-btn"><span class="material-icons">refresh</span> Reset Workflow</button>
+            </div>
+          </div>
+
+          <div class="section-title">
+            <h3>Input and Output</h3>
+            <label class="checkbox-label" for="show-advanced-settings-chk">
+              <input type="checkbox" id="show-advanced-settings-chk"> Show Advanced Settings
+            </label>
+          </div>
+
+          <div class="card tabs-card">
+            <div class="tabs-header">
+              <button class="tab-btn active" data-tab="single-file"><span class="material-icons">description</span> Single File Upscale</button>
+              <button class="tab-btn" data-tab="batch-folder"><span class="material-icons">folder_open</span> Batch Folder Upscale</button>
+            </div>
+            
+            <div class="tab-content active" id="tab-single-file">
+              <div class="input-row">
+                <label for="input-file-path">Input File <span class="material-icons info-icon" data-tooltip="Path of the image or archive file (such as zip or cbz) to upscale. If an archive file is selected, each image in the archive will be upscaled and saved to a new archive.">help_outline</span></label>
+                <div class="path-input-group">
+                  <input type="text" id="input-file-path">
+                  <button class="btn btn-secondary" id="browse-input-file-btn">Select File</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="tab-content" id="tab-batch-folder">
+              <div class="input-row">
+                <label for="input-folder-path">Input Folder <span class="material-icons info-icon" data-tooltip="Path of the folder to upscale. The folder and all of its subfolders will be scanned.">help_outline</span></label>
+                <div class="path-input-group">
+                  <input type="text" id="input-folder-path">
+                  <button class="btn btn-secondary" id="browse-input-folder-btn">Select Folder</button>
+                </div>
+              </div>
+              
+              <div class="input-row align-center mt-10">
+                <label>Target Files</label>
+                <div style="display:flex; gap:24px;">
+                  <label class="checkbox-label"><input type="checkbox" id="upscale-archives-chk" checked> Upscale Archives</label>
+                  <label class="checkbox-label"><input type="checkbox" id="upscale-images-chk" checked> Upscale Images</label>
+                </div>
+              </div>
+            </div>
+            
+            <div class="input-row mt-20">
+              <label for="output-folder-path">Output Folder <span class="material-icons info-icon" data-tooltip="Path of the folder to save the upscaled image(s) or archive(s).">help_outline</span></label>
+              <div class="path-input-group">
+                <input type="text" id="output-folder-path">
+                <button class="btn btn-secondary" id="browse-output-folder-btn">Select Folder</button>
+              </div>
+            </div>
+
+            <div class="input-row mt-10">
+              <label for="output-filename">Output Filename <span class="material-icons info-icon" data-tooltip="The filename of the upscaled image(s) or archive(s), without the file extension. %filename% is the input filename without extension. Archives will be output with .cbz extension; images will be output with the extension of the image format selected below.">help_outline</span></label>
+              <div class="path-input-group">
+                <input type="text" id="output-filename" value="%filename%-mangajanai">
+              </div>
+            </div>
+
+            <div class="input-row align-center mt-10">
+              <label>File Overwrite</label>
+              <label class="checkbox-label"><input type="checkbox" id="overwrite-files-chk"> Allow Files in Output Path to be Overwritten <span class="material-icons info-icon" data-tooltip="If unchecked, upscaling will be skipped for files that already exist in the output path. If checked, any files that already exist in the output path will be overwritten without warning. Use with caution.">help_outline</span></label>
+            </div>
+          </div>
+
+          <div class="section-title mt-20">
+            <h3>Output Format Options</h3>
+          </div>
+
+          <div class="card">
+            <div class="input-row align-center">
+              <label>Output Image Format <span class="material-icons info-icon" data-tooltip="WebP: Modern format recommended for good quality and efficient filesize compression.&#10;&#10;AVIF: Better lossy compression than WebP, but less supported.&#10;&#10;PNG: Lossless format with excellent compatibility.&#10;&#10;JPEG: Lossy format with excellent compatibility.">help_outline</span></label>
+              <div class="toggle-group" id="format-toggle-group">
+                <button class="toggle-btn active" data-format="webp">WebP</button>
+                <button class="toggle-btn" data-format="avif">AVIF</button>
+                <button class="toggle-btn" data-format="png">PNG</button>
+                <button class="toggle-btn" data-format="jpeg">JPEG</button>
+              </div>
+            </div>
+
+            <div class="input-row align-center mt-10" id="lossless-container">
+              <label>Lossless Mode</label>
+              <label class="checkbox-label"><input type="checkbox" id="use-lossless-chk"> Use Lossless Compression <span class="material-icons info-icon" data-tooltip="Use lossless compression. Usually not recommended due to producing images with much larger filesize with little visual benefit.">help_outline</span></label>
+            </div>
+
+            <div class="input-row align-center mt-10" id="lossy-quality-container">
+              <label for="lossy-quality">Lossy Compression Quality <span class="material-icons info-icon" data-tooltip="Quality level for compression. Note that a quality level of 100 is still lossy.">help_outline</span></label>
+              <div class="number-input-group">
+                <input type="number" id="lossy-quality" value="80" min="0" max="100">
+                <span>%</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-title mt-20">
+            <h3>Upscaling</h3>
+          </div>
+          
+          <div class="card">
+            <div class="input-row align-center">
+              <label>Upscale Mode <span class="material-icons info-icon" data-tooltip="Scale: Upscale by factor (e.g. 2x).&#10;&#10;Width/Height: Upscale to exact dimensions.&#10;&#10;Fit to Display: Upscale to fit exactly within a specified device.">help_outline</span></label>
+              <div class="toggle-group" id="upscale-mode-toggle-group">
+                <button class="toggle-btn active" data-mode="scale">Scale</button>
+                <button class="toggle-btn" data-mode="width">Width</button>
+                <button class="toggle-btn" data-mode="height">Height</button>
+                <button class="toggle-btn" data-mode="fit">Fit to Display</button>
+              </div>
+            </div>
+
+            <div class="mode-content active mt-10" id="mode-scale">
+              <div class="input-row align-center">
+                <label>Scale Factor <span class="material-icons info-icon" data-tooltip="All images will be upscaled by the specified scaling factor.">help_outline</span></label>
+                <div class="toggle-group" id="scale-factor-toggle-group">
+                  <button class="toggle-btn" data-scale="1">1x</button>
+                  <button class="toggle-btn" data-scale="2">2x</button>
+                  <button class="toggle-btn" data-scale="3">3x</button>
+                  <button class="toggle-btn active" data-scale="4">4x</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="mode-content mt-10" id="mode-width">
+              <div class="input-row align-center">
+                <label for="output-width-val">Output Width</label>
+                <div class="number-input-group">
+                  <input type="number" id="output-width-val" value="3840" min="1">
+                  <span>px</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mode-content mt-10" id="mode-height">
+              <div class="input-row align-center">
+                <label for="output-height-val">Output Height</label>
+                <div class="number-input-group">
+                  <input type="number" id="output-height-val" value="2160" min="1">
+                  <span>px</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mode-content mt-10" id="mode-fit">
+              <div class="input-row align-center">
+                <label for="display-device-select">Tablet Device</label>
+                <select id="display-device-select" class="dropdown-select"></select>
+              </div>
+              <div class="input-row align-center mt-10">
+                <label>Display Orientation</label>
+                <div class="toggle-group" id="orientation-toggle-group">
+                  <button class="toggle-btn active" data-orientation="portrait">Portrait</button>
+                  <button class="toggle-btn" data-orientation="landscape">Landscape</button>
+                </div>
+              </div>
+              <div class="input-row align-center mt-10">
+                <label>Display Resolution</label>
+                <span id="display-resolution-preview" class="mono-text">1404px × 1872px</span>
+              </div>
+            </div>
+          </div>
+
+          <div id="advanced-settings-section">
+            <div class="section-title mt-20">
+              <h3 style="display: flex; align-items: center; gap: 8px;">Advanced Settings <span class="material-icons info-icon" data-tooltip="Advanced settings allow you to select different settings to use depending on the image selected for upscaling.">help_outline</span></h3>
+            </div>
+
+            <div class="card">
+              <div class="input-row align-center">
+                <label for="grayscale-threshold">Grayscale Detection Threshold <span class="material-icons info-icon" data-tooltip="The threshold for which an image is considered grayscale. The default value of 12 considers images with slight color as grayscale due to artifacts. 0 means strict grayscale.">help_outline</span></label>
+                <input type="range" id="grayscale-threshold" min="0" max="24" value="12" class="slider">
+                <span id="grayscale-threshold-val" class="slider-val">12</span>
+              </div>
+            </div>
+
+            <div id="chains-container">
+              <!-- Chains rendered here -->
+            </div>
+            
+            <button class="btn btn-primary mt-10" id="add-chain-btn"><span class="material-icons">add_circle</span> Add Chain</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-bar">
+        <div class="progress-stats">
+          <span id="elapsed-time">Elapsed Time: 00:00:00</span>
+          <span id="archive-etr">Remaining Time (Current Archive): --:--:--</span>
+          <span id="total-etr">Remaining Time (Total): --:--:--</span>
+          <span id="total-eta">Estimated Finish Time: --:--:--</span>
+        </div>
+
+        <div class="bottom-bar-main">
+          <div class="progress-container">
+            <div class="progress-row">
+              <span id="archive-progress-text" class="progress-label">0 / 0 images in current archive</span>
+              <div class="progress-track">
+                <div id="archive-progress" class="progress-fill"></div>
+              </div>
+            </div>
+            <div class="progress-row">
+              <span id="progress-text" class="progress-label">0 / 0 total files</span>
+              <div class="progress-track">
+                <div id="main-progress" class="progress-fill"></div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="action-buttons">
+            <button id="toggle-console-btn" class="btn btn-icon toggle-active" data-tooltip="Toggle Activity Log">
+              <span class="material-icons">terminal</span>
+            </button>
+            <button id="cancel-btn" class="btn btn-danger" disabled>
+              <span class="material-icons">stop_circle</span> Cancel
+            </button>
+            <button id="upscale-btn" class="btn btn-primary">
+              <span class="material-icons">play_arrow</span> Upscale
+            </button>
+          </div>
+        </div>
+        <div id="validation-message" class="validation-error" style="text-align: right; margin-top: -10px;"></div>
+      </div>
+
+      <div class="console-panel" id="console-panel">
+        <div class="console-header">
+          <h3>Activity Log</h3>
+          <div style="display:flex; gap:8px;">
+            <button class="btn-icon" id="float-console-btn" data-tooltip="Float Console"><span class="material-icons" style="font-size: 16px;">open_in_new</span></button>
+            <button class="btn-icon" id="clear-console-btn" data-tooltip="Clear Console"><span class="material-icons" style="font-size: 16px;">delete_outline</span></button>
+            <button class="btn-icon" id="close-console-btn" data-tooltip="Close Console"><span class="material-icons" style="font-size: 16px;">close</span></button>
+          </div>
+        </div>
+        <div class="console-output" id="console-output"></div>
+      </div>
+  </div>
+
+    <!-- App Settings Modal -->
+    <div id="settings-modal" class="modal-overlay">
+      <div class="modal-content glass">
+        <h3>App Settings</h3>
+        <div class="setting-group">
+          <label for="setting-device">Device</label>
+          <select id="setting-device" class="dropdown-select">
+            <option value="gpu">GPU (Recommended)</option>
+            <option value="cpu">CPU</option>
+          </select>
+        </div>
+        <div class="setting-group checkbox">
+          <input type="checkbox" id="setting-fp16" checked>
+          <label for="setting-fp16">Use FP16 (Half Precision) to save VRAM</label>
+        </div>
+        <div class="setting-group">
+          <label for="setting-models-dir">Models Directory</label>
+          <div class="path-input-group">
+            <input type="text" id="setting-models-dir" value="models">
+            <button class="btn btn-secondary" id="browse-models-btn">Browse</button>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" id="close-settings-btn">Cancel</button>
+          <button class="btn btn-primary" id="save-settings-btn">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <datalist id="common-resolutions">
+    <option value="0x0">
+    <option value="0x1250">
+    <option value="0x1350">
+    <option value="0x1450">
+    <option value="0x1550">
+    <option value="0x1760">
+    <option value="0x1984">
+    <option value="1080x1920">
+    <option value="1440x2560">
+    <option value="2160x3840">
+  </datalist>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

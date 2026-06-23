@@ -12,3 +12,6 @@ backend/models/
 current/appstate2.json
 backend/rocm-wheels/
 .fuse_hidden*
+backend/src/python-runtime/
+.agents/
+skills-lock.json

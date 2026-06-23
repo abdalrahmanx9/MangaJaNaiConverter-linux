@@ -4,15 +4,30 @@ version = "1.0.0"
 description = "MangaJaNai Converter - Linux Edition"
 requires-python = ">=3.12"
 dependencies = [
-    "ruff"
+    "chainner-ext>=0.3.10",
+    "numpy>=2.2",
+    "opencv-python>=4.11",
+    "packaging>=25.0",
+    "pillow>=10.0",
+    "psutil>=6.0",
+    "pynvml>=11.5",
+    "pyvips>=3.0",
+    "pyvips-binary>=8.16",
+    "rarfile>=4.2",
+    "spandrel>=0.4.1",
+    "spandrel-extra-arches>=0.2.0",
+    "torch",
+    "torchvision",
+    "triton ; sys_platform == 'linux'",
 ]
 
 [project.optional-dependencies]
-dev = ["ruff"]
+dev = ["ruff", "pyright", "pytest"]
+
 [tool.uv]
 find-links = ["rocm-wheels"]
 
 [tool.uv.sources]
-triton = { path = "rocm-wheels/triton-3.6.0%2Brocm7.2.4.git4ed88892-cp312-cp312-linux_x86_64.whl" }
-torch = { path = "rocm-wheels/torch-2.10.0%2Brocm7.2.4.lw.git3d3aa833-cp312-cp312-linux_x86_64.whl" }
-torchvision = { path = "rocm-wheels/torchvision-0.25.0%2Brocm7.2.4.git82df5f59-cp312-cp312-linux_x86_64.whl" }
+triton = { path = "rocm-wheels/triton-3.6.0+rocm7.2.4.git4ed88892-cp312-cp312-linux_x86_64.whl" }
+torch = { path = "rocm-wheels/torch-2.10.0+rocm7.2.4.lw.git3d3aa833-cp312-cp312-linux_x86_64.whl" }
+torchvision = { path = "rocm-wheels/torchvision-0.25.0+rocm7.2.4.git82df5f59-cp312-cp312-linux_x86_64.whl" }
