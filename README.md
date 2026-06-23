@@ -24,59 +24,28 @@ Original project: [MangaJaNaiConverterGui](https://github.com/the-database/Manga
 
 *Note: Python, PyTorch, and `uv` are automatically installed by the built-in Setup Wizard.*
 
-## Quick Start (Building from Source)
+## Quick Start
 
-The GUI is built with Tauri (Rust + Node.js).
+1. Download the latest release from [Releases](https://github.com/abdalrahmanx9/MangaJaNaiConverter-linux/releases) for your platform.
+2. Extract the archive.
+3. Run the executable (`MangaJaNaiConverter` on Linux, `MangaJaNaiConverter.exe` on Windows).
 
-### 1. System Dependencies (Linux Only)
-Ensure your GPU drivers are installed and loaded (e.g., `rocminfo` or `nvidia-smi` works). Then install basic system packages:
+On first launch, the Setup Wizard will automatically download Python, PyTorch, and all required dependencies.
+
+## Building from Source
+
+Requires [Node.js](https://nodejs.org/) and [Rust](https://rustup.rs/).
+
+**Linux** also needs Tauri system dependencies:
 ```bash
-sudo apt update
-sudo apt install -y libvips libxcb-cursor0 curl wget
-```
-*(Windows users skip this step).*
-
-### 2. GUI Development Requirements
-To build and run the Tauri GUI, you need Node.js, Rust, and Tauri dependencies:
-
-**Linux:**
-```bash
-# Install Node.js
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt install -y nodejs
-
-# Install Rust
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-source "$HOME/.cargo/env"
-
-# Install Tauri dependencies
 sudo apt install -y libwebkit2gtk-4.1-dev build-essential file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
 ```
 
-**Windows:**
-1. Install [Node.js](https://nodejs.org/).
-2. Install [Rust](https://rustup.rs/).
-3. Install [Visual Studio C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/).
-
-### 3. Launch the Application
-
-**Linux:**
+Then run:
 ```bash
-bash run.sh
+bash run.sh    # Linux
+run.bat         # Windows
 ```
-
-**Windows:**
-```bat
-run.bat
-```
-
-On first launch, the application will display a **Setup Wizard** that automatically downloads:
-- `uv` package manager
-- Python 3.12 (isolated within `backend/src/python-runtime`)
-- PyTorch (CUDA or ROCm variants based on your hardware)
-- All required pip dependencies
-
-Models can also be downloaded directly from within the GUI.
 
 ## Project Structure
 
