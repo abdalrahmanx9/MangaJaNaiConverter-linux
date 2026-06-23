@@ -1,0 +1,110 @@
+name: Build
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+# SECURITY: Least privilege principle. The token only needs read access to checkout the code.
+permissions:
+  contents: read
+
+# OPTIMIZATION: Cancel previous runs on the same branch if a new commit is pushed to save CI minutes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    # SECURITY & OPTIMIZATION: Prevent stuck jobs from running infinitely and draining CI budget.
+    timeout-minutes: 60
+    strategy:
+      # Let both OS builds finish even if one fails
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            name: linux
+            artifact_name: MangaJaNaiConverter-Linux
+          - os: windows-latest
+            name: windows
+            artifact_name: MangaJaNaiConverter-Windows
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # SECURITY: Prevent the GITHUB_TOKEN from persisting in local git config.
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'gui/package-lock.json'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu, x86_64-pc-windows-msvc
+
+      - name: Install Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: 'gui/src-tauri -> target'
+
+      - name: Install dependencies (Linux)
+        if: matrix.os == 'ubuntu-24.04'
+        # OPTIMIZATION: --no-install-recommends avoids downloading bloated unnecessary packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Install npm dependencies
+        working-directory: ./gui
+        # OPTIMIZATION/SECURITY: Use `npm ci` for deterministic, clean installs instead of `npm install`
+        run: npm ci
+
+      - name: Build Tauri app
+        working-directory: ./gui
+        run: npm run tauri build -- --bundles none
+
+      - name: Package Release (Linux)
+        if: matrix.os == 'ubuntu-24.04'
+        run: |
+          mkdir -p release-pkg
+          cp gui/src-tauri/target/release/gui release-pkg/MangaJaNaiConverter
+          cp -r backend release-pkg/backend
+          cd release-pkg
+          tar -czf ../${{ matrix.artifact_name }}.tar.gz .
+
+      - name: Package Release (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path release-pkg
+          Copy-Item -Path gui\src-tauri\target\release\gui.exe -Destination release-pkg\MangaJaNaiConverter.exe
+          Copy-Item -Path backend -Destination release-pkg\backend -Recurse
+          Compress-Archive -Path release-pkg\* -DestinationPath ${{ matrix.artifact_name }}.zip
+
+      - name: Upload Artifact (Linux)
+        if: matrix.os == 'ubuntu-24.04'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_name }}.tar.gz
+          # SECURITY/OPTIMIZATION: Ensure we don't silently upload nothing.
+          if-no-files-found: error
+
+      - name: Upload Artifact (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_name }}.zip
+          if-no-files-found: error
