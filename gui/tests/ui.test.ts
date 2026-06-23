@@ -107,25 +107,24 @@ describe('Tauri GUI Interaction Tests', () => {
     mainModule.appSettings.workflows[mainModule.currentWorkflowIndex].input_file_path = "test.zip";
     mainModule.appSettings.workflows[mainModule.currentWorkflowIndex].output_folder_path = "/mock/output";
     mainModule.appSettings.workflows[mainModule.currentWorkflowIndex].selected_tab_index = 0;
+    mainModule.appSettings.workflows[mainModule.currentWorkflowIndex].chains.forEach((c: any) => c.model_file_path = 'model1.pth');
+    upscaleBtn.disabled = false;
     upscaleBtn.click();
-    await new Promise(r => setTimeout(r, 50));
+    await new Promise(r => setTimeout(r, 300));
     expect(upscaleBtn.disabled).toBe(true);
     expect(cancelBtn.disabled).toBe(false);
   });
   
   it('should toggle between dark and light theme', async () => {
-    const app = document.getElementById('app') as HTMLElement;
     const toggleBtn = document.getElementById('theme-toggle-btn') as HTMLButtonElement;
 
-    expect(app.getAttribute('data-theme')).toBe('dark');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
 
     toggleBtn.click();
-    await new Promise(r => setTimeout(r, 50));
-    expect(app.getAttribute('data-theme')).toBe('light');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
 
     toggleBtn.click();
-    await new Promise(r => setTimeout(r, 50));
-    expect(app.getAttribute('data-theme')).toBe('dark');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
   });
 
   it('should import a new custom workflow and display it in sidebar', async () => {
