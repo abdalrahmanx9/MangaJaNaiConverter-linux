@@ -838,7 +838,6 @@ function setupEventListeners() {
             
             if (isFloating) {
                 // Set explicit top/left so the bottom-right resize handle works natively
-                const rect = consolePanel.getBoundingClientRect();
                 consolePanel.style.left = `${window.innerWidth - 624}px`;
                 consolePanel.style.top = `${window.innerHeight - 424}px`;
                 consolePanel.style.bottom = "auto";
