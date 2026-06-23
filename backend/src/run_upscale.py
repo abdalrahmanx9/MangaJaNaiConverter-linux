@@ -101,6 +101,17 @@ from spandrel import ImageModelDescriptor, ModelDescriptor
 
 sys.path.append(os.path.normpath(os.path.dirname(os.path.abspath(__file__))))
 
+
+# ponytail: mocking sanic here avoids editing 18 files just to remove the sanic.log dependency for the standalone tool
+import logging
+import types
+sanic_mock = types.ModuleType("sanic")
+sanic_log_mock = types.ModuleType("sanic.log")
+sanic_log_mock.logger = logging.getLogger("sanic")
+sanic_mock.log = sanic_log_mock
+sys.modules["sanic"] = sanic_mock
+sys.modules["sanic.log"] = sanic_log_mock
+
 import spandrel_custom
 from nodes.impl.image_utils import normalize, to_uint8
 from nodes.impl.upscale.auto_split_tiles import (
