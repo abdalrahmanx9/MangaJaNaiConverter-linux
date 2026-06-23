@@ -34,14 +34,22 @@ On first launch, the Setup Wizard will automatically download Python, PyTorch, a
 
 ## Building from Source
 
-Requires [Node.js](https://nodejs.org/) and [Rust](https://rustup.rs/).
+**Prerequisites:** [Node.js](https://nodejs.org/) 20+ and [Rust](https://rustup.rs/).
 
-**Linux** also needs Tauri system dependencies:
+**Linux** also needs system libraries for Tauri:
 ```bash
 sudo apt install -y libwebkit2gtk-4.1-dev build-essential file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
 ```
 
-Then run `npm run tauri dev` from the `gui/` directory.
+**Windows** needs [Visual Studio C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/).
+
+**Build steps:**
+```bash
+cd gui
+npm ci
+npm run tauri dev     # development with hot-reload
+npm run tauri build   # production binary in target/release/
+```
 
 ## Project Structure
 
