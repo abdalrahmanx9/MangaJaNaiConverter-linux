@@ -70,9 +70,13 @@ jobs:
         # OPTIMIZATION/SECURITY: Use `npm ci` for deterministic, clean installs instead of `npm install`
         run: npm ci
 
+      - name: Run Tests
+        working-directory: ./gui
+        run: npm run test
+
       - name: Build Tauri app
         working-directory: ./gui
-        run: npm run tauri build -- --bundles none
+        run: npm run tauri build
 
       - name: Package Release (Linux)
         if: matrix.os == 'ubuntu-24.04'
